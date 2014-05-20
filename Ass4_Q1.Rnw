@@ -1,0 +1,227 @@
+\documentclass[10pt]{article}
+\usepackage{natbib}
+\usepackage{amsmath} %boxed %align %substack
+\usepackage{graphicx}
+\usepackage{booktabs} %table
+\usepackage{fancyhdr}
+% \usepackage{hyperref}
+%font \bfseries \textsf \texttt
+
+\begin{document}
+% \SweaveOpts{concordance=TRUE}
+\everymath{\displaystyle}
+\title{The {\bfseries{glarma}} Package for Observation Driven\\
+Time Series Regression of Counts}
+\author{William T.M. Dunsmuir, and David J. Scott} 
+\date{}
+\maketitle
+\thispagestyle{empty}
+
+
+\begin{abstract}
+We review the theory and application of generalised linear autoregressive moving average observation driven models for time series of counts with explanatory variables and describe the estimation of these models using the {\bfseries{glarma}} {\textsf{R}} package. Diagnostic and graphical methods are also illustrated by several examples.
+\end{abstract}
+
+\section{Introduction}
+
+\noindent In the past 15 years there has been substantial progress made in developing regression models with serial dependence for discrete valued response time series such as arise for modeling Bernoulli, binomial, Poisson or negative binomialcounts. In this paper, we consider the GLARMA (generalized linear autoregressive moving average) subclass of observation driven models in detail. Assessing and modelling dependence when the outcomes are discrete random variables is particularly challenging. A major objective of using GLARMA models is the making of inferences concerning regression variables while ensuring that dependence is detected and properly accounted for. GLARMA models are relatively easy to fit and provide an accrssible and rapid way to detect and account for serial dependence in regression modelling of time series.
+
+\subsection{Generalized state space models}
+
+\noindent The GLARMA models considered here are a subclass of generalized state space models for non-Gaussian time series described in \citet{dav99}, \citet{bro10} and \citet{dur12} for example. A generalized state-space model for a time series \{${Y_t,t = 1,2,...}$\} consists of an observation variable and state variable. The model is expressed in terms of conditional probability distributions for the observation and state variables. Such models can be loosely characterized as either parameter driven or observation driven. The observation specification is the same for both models.
+
+For parameter driven models the serial dependence in the state equation is governed by a latent, usually stationary, time series that cannot be observed directly and which evolves independently of past and present values of the observed responses or the covariates. On thte other hand, as the name implies, 
+
+
+
+%------------------------- Page 2 --------------------------------%
+\noindent in observation driven models, the random component of $W_t$ depends on past observations \{${Y_s,s < t}$\}. %add \ to show{}
+
+Estimation of parameter driven models requires very high dimensional integrals to be evaluated or approximated using asymtotic expansions, simulation methods, numerical integration or all three. Because of this they can be difficult to fit and for routine model building in which many potential regressors need to be considered and evaluated for significance, the parameter driven models for count time series are not yet ready for general use.
+ 
+On the other hand, the observation driven models considered here are much easier to fit because the likelihood is conditionally specified as a product of conditional distributions which belong to the exponential family and for which the natural parameter is readily calculated via recursion. As a result they are relatively straightforward to apply in practical settings with numerous regressors and long time series.
+
+
+\section{Diagnostics}
+
+\subsection{Probability integral transformation}
+
+\noindent To examine the validity of the assumed distribution in the GLARMA model a number of authors have suggested the use of the probability integral transformation (PIT), see for example \citet{cza09}. Although the PIT applies to continuous distributions and the distributions in GLARMA models are discrete, \citet{cza09} have provided a non-randomized approach which has been implemented in the {\bfseries{glarma}} package. There are four functions involved : {\texttt{glarmaPredProb}} calculates conditional predictive probabilities; {\texttt{glarmaPIT}} calculates the non-randomized PIT; {\texttt{histPIT}} plots a histogram of the PIT; and {\texttt{qqPIT}} draws a Q-Q plot of the PIT. If the distribution selected for the model is correct, then the histogram and Q-Q plot should resemble the histogram and Q-Q plot obtained when sampling from the uniform distribution on $[0,1]$. Of the two plots, the histogram is generally more revealing. Deviations from the expected form of the Q-Q plot are often difficult to discern.
+
+To calculate the conditional predictive probabilities and the PIT the following formulae from \citet{cza09} are used.
+
+Given the counts \{$y_t$\}, the conditional predictive probability function $F^{(t)}(.|y_t)$ is given by
+
+\begin{equation}
+F^{(t)}(u|y_t) =  
+\left\{\begin{array}{ll}0, & u \leq F(y_t - 1),\\
+\dfrac{u-F(y_t - 1)}{F(y_t)-F(y_t - 1)}, & F(y_t - 1) \leq u \leq F(y_t),\\
+1, & u > F(y_t).
+\end{array} \right.
+\end{equation}
+
+\noindent Here $F(y_t)$ and $F(y_t - 1)$ are the upper and lower conditional predictive probabilities respectively.
+
+%------------------------- Page 3 --------------------------------%
+\newpage
+Then the non-randomized PIT is defined as 
+\begin{equation}
+\bar{F}(u) = \frac{1}{T-1}\sum_{t=2}^{T}F^{(t)}(u|y_t)
+\end{equation}
+
+To draw the PIT histogram, the number of bins, \textsl{I}, is chosen, then the height of the $i$th bin is
+\begin{equation}
+f_i = \bar{F}\bigg(\frac{i}{I}\bigg) - \bar{F}\bigg(\frac{i-1}{I}\bigg).
+\end{equation}
+
+\noindent The default number of bins in \texttt{histPIT} is 10. To help with assessment of the distribution, a horizontal line is drawn on the histogram at height 1, representing the density function of the uniform distribution on $[0, 1]$.
+
+%\in symbol
+The Q-Q plot of the PIT plots $\bar{F}(u)$ against $u$, for $u \in [0, 1]$. The quantile function of the uniform distribution on $[0, 1]$ is also drawn on the plot for reference.
+
+\citet{jun11} employ the above diagnostics as well as the randomized version of PIT residuals to compare alternative competing count time series models for several data sets.
+
+\subsection{Plots}
+
+The plot method for objects of class {\texttt{"glarma"}} produces six plots by default: a time series plot with the observed values of the dependent variable, the fixed effects fit, and the GLARMA fit; an ACF plot of the residuals; a plot of the residuals against time; a normal Q-Q plot; the PIT histogram; and the Q-Q plot for the PIT. Any subset of these six plots can be produce using the {\texttt{which} argument. For example to omit both of the Q-Q plots (plot 4 and 6), set {\texttt{which = c(1:3, 5)}. Arguments to the plot method are also provided to change properties of lines in these plots, namely line types, widths, and colours.
+
+
+\section{Examples}
+
+There are four example data sets included in the {\bfseries{glarma}} package.\ Sample analyses for all these data sets are provided in either the help pages for the data sets or for the {\texttt{glarma()}} function.
+
+GLARMA models with Poisson counts have appeared previously in the literature, however analyses using the binomial and negative binomial distributions are nobel, so we concentrate on those cases in this section.
+
+\subsection{Court Conviction Data}
+
+\noindent This data set records monthly counts of charges laid and convictions made in Local Courts and Higher Court in armed robbery in New South Wales, Australia, from 1995-2007, see \citet{dun08}. A description of the columns in the data set is given in Table \ref{table:table1}.
+
+The first step is to set up dummy variables for months.
+
+\begin{table}[ht] %\hline Row line, {|c|} coloumn line
+\begin{tabular}{|c|l|l|} \hline
+Column & Variable & Description \\ \hline
+1 & \texttt{Data} & Date in monty/year format \\
+2 & \texttt{Incpt} & Vector of 1s \\
+3 & \texttt{Trend} & Scaled time trend \\
+4 & \texttt{Step.2001} & Step change from 2001 onwards \\
+5 & \texttt{Trend.2001} & Change in trend from 2001 onwards \\
+6 & \texttt{HC.N} & Monthly number of cases, Higher Court \\
+7 & \texttt{HC.Y} & Monthly number of convictions, Higher Court \\
+8 & \texttt{HC.P} & Monthly proportion of convictions, Higher Court \\
+9 & \texttt{LC.N} & Monthly number of cases, Lower Court \\
+10 & \texttt{LC.Y} & Monthly number of convictions, Lower Court \\
+11 & \texttt{LC.P} & Monthly proportion of convictions, Lower Court \\ \hline
+\end{tabular}
+\caption{The court conviction data set.}
+\label{table:table1}
+\end{table}
+
+%suppress input code  
+%change default prompt setting can also do continue='+ '
+<<R1,echo=FALSE>>=
+library("glarma")
+library("MASS")
+options(prompt='R> ')
+@
+
+
+%tidy=F, stop R tidying up codes, enable codes keep its original way
+%prompt=TRUE add >+ in output
+<<R2, background="white", cache=FALSE, tidy=FALSE, prompt=TRUE, comment=NA>>=
+data("RobberyConvict")
+datalen <- dim(RobberyConvict)[1]
+monthmat <- matrix(0, nrow = datalen, ncol = 12)
+dimnames(monthmat) <- list(NULL, 
+                           c("Jan", "Feb", "Mar", "Apr","May", "Jun",
+                             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")) 
+months <- unique(months(strptime(RobberyConvict$Date,
+                                 format = "%m/%d/%Y"), 
+                        abbreviate=TRUE))
+for (j in 1:12) {
+  monthmat[months(strptime(RobberyConvict$Date, "%m/%d/%Y"),
+                  abbreviate = TRUE) == months[j], j] <-1
+}
+
+RobberyConvict <- cbind(rep(1, datalen), RobberyConvict, monthmat) 
+rm(monthmat)
+@
+
+
+Similar analyses can be carried out for both the Lower Court and the Higher Court data. Here we consider only the Lower Court data. The ARIMA component of the model is chosen to be AR(1) and the model for the conviction counts is binomial. A GLM is fitted first to obtain an initial value for the regression coefficients. The initial value of the AR parameter is set at 0. Pearson residuals are used with Newton-Raphson iteration.
+
+First of all the data is prepared for fitting a binomial and the initial GLM fit is obtained.
+
+<<R3,echo=FALSE>>=
+options(width=55)
+@
+
+%head(Y, 5) automatically generate table 
+<<R4, background="white", tidy=F, prompt=T, comment=NA>>=
+y1 <- RobberyConvict$LC.Y
+n1 <- RobberyConvict$LC.N
+Y <- cbind(y1, n1-y1)
+head(Y, 5) 
+glm.LCRobbery <- glm(Y ~ Step.2001 +
+                        I(Feb + Mar + Apr + May + Jun + Jul) +
+                        I(Aug + Sep + Oct + Nov + Dec),
+                     data = RobberyConvict, family = binomial(link = logit),
+                     na.action = na.omit, x = TRUE)
+summary(glm.LCRobbery, corr = FALSE)
+@
+
+
+We can print the regression coeffcients for this model in a more elegant form in Table \ref{table:table2}.
+
+
+<<R5, background="white", tidy=F, prompt=F, comment=NA>>=
+glmCoeff <- summary(glm.LCRobbery)$coefficients
+@
+
+
+<<R6, echo=F, results="asis">>=
+library("xtable")
+print(xtable(glm.LCRobbery, digits=2, caption="Regression coeffcients", label="table:table2"))
+@
+
+Then the GLARMA model is fitted.
+
+<<R7, background="white", tidy=F, prompt=T, comment=NA>>=
+X <- glm.LCRobbery$x
+colnames(X)[3:4] <- c("Feb-Jul","Aug-Dec")
+head(X, 5)
+glarmamod <- glarma(Y, X, phiLags = c(1), type = "Bin", method = "NR",
+                   maxit = 100, grad = 1e-6)
+summary(glarmamod)
+@
+
+We observe that the regression coeffcients for the GLARMA model are quite
+similar to those for the GLM model. In particular, the step change in 2001 is
+highly significant. The likelihood ratio and Wald tests both suggest the need to
+deal with autocorrelation.
+
+%eval=F, do not run the code
+<<R8, background="white", tidy=F, prompt=F, comment=NA, eval=FALSE>>=
+par(mar = c(4, 4, 3, 0.1), cex.lab = 0.95, cex.axis = 0.9, mgp = c(2,
+    0.7, 0), tcl = -0.3, las = 1)
+plot(glarmamod)
+@
+%\ref{fig:R9}
+In the diagnostic plots shown in Figure \ref{fig:R9}, the ACF plot shows little residual
+autocorrelation, and the Q-Q plot of the residuals shows reasonable conformity
+with normality. However the PIT histogram suggests that the binomial model
+for the counts is not appropriate for this data.
+
+%suppress the input code
+<<R9, fig.width = 6, fig.height = 8, out.width = "9.5cm", out.height = "14.5cm", fig.align = "center", fig.cap = "Diagnostic plots for the court conviction model.", fig.show = "hold", echo=FALSE>>=
+par(mar = c(4, 4, 3, 0.1), cex.lab = 0.95, cex.axis = 0.9, mgp = c(2, 0.7, 0), tcl = -0.3, las = 1, mfrow=c(3,2))
+plot(glarmamod)
+@
+% plot(glarmamod, which = 1:2)
+% plot(glarmamod, which = 3:4)
+% plot(glarmamod, which = 5:6)
+
+\bibliographystyle{jss}
+\bibliography{ref}
+
+\end{document}
