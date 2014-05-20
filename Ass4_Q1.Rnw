@@ -4,7 +4,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs} %table
 \usepackage{fancyhdr}
-% \usepackage{hyperref}
+\usepackage{hyperref}
 %font \bfseries \textsf \texttt
 
 \begin{document}
